@@ -134,11 +134,6 @@ def mostrar_estado_cambios_capital():
 
     reserva_legal = (utilidad_periodo * 0.05) / 12
 
-    if "Reserva Legal" not in st.session_state.balances["Extra"]:
-        st.session_state.balances["Extra"]["Reserva Legal"] = 0
-
-    st.session_state.balances["Extra"]["Reserva Legal"] = reserva_legal
-
     estado_cambios = {
         "Concepto": [
             "Saldo inicial",
@@ -148,6 +143,8 @@ def mostrar_estado_cambios_capital():
             "Resultado del ejercicio (Utilidad)",
             "Total",
             "Disminuciones:",
+            "Decreto de dividendos:",
+            "Reserva legal:",
             "Reembolso a socios",
             "Total",
             "Incremento neto",
@@ -163,6 +160,8 @@ def mostrar_estado_cambios_capital():
             None,
             0,
             0,
+            0,
+            0,
             capital_social,
             capital_social
         ],
@@ -175,7 +174,9 @@ def mostrar_estado_cambios_capital():
             reserva_legal + utilidad_periodo,
             None,
             0,
+            reserva_legal,
             0,
+            reserva_legal,
             utilidad_periodo,
             utilidad_periodo
         ],
@@ -188,7 +189,9 @@ def mostrar_estado_cambios_capital():
             capital_social + reserva_legal + utilidad_periodo,
             None,
             0,
+            reserva_legal,
             0,
+            reserva_legal,
             capital_social + utilidad_periodo,
             capital_social + utilidad_periodo
         ]
@@ -201,12 +204,31 @@ def mostrar_estado_cambios_capital():
 def mostrar_estado_flujo_efectivo():
     st.subheader("Estado de Flujo de Efectivo")
     
-    st.write("### Actividades en Operación")
     
     utilidad_periodo = st.session_state.balances["Capital"]["Utilidad del Periodo"]
     isr = utilidad_periodo * 0.30  
     ptu = utilidad_periodo * 0.10  
     utilidad_neta = utilidad_periodo - (isr + ptu)
+
+    st.write("### Actividades en Operación")
+    operacion_data = {
+        "Clientes":st.session_state.balances["Activo"]["Clientes"],
+        "Mercancias":st.session_state.balances["Activo"]["Mercancías"],
+        "IVA acreditable":st.session_state.balances["Activo"]["IVA pagado"],
+        "IVA pendiente de acreditar":st.session_state.balances["Activo"]["IVA por acreditar"],
+        "IVA trasladado":st.session_state.balances["Pasivo"]["IVA trasladado"],
+        "IVA por trasladar":st.session_state.balances["Pasivo"]["IVA por trasladar"],
+        "Proveedores": 0,
+        "Provision de ISR": isr*-1,
+        "Provision de PTU": ptu*-1,
+        "Utilidad del ejercicio": utilidad_neta*-1,
+
+    }
+    df_operacion = pd.DataFrame.from_dict(operacion_data, orient="index", columns=["Monto"])
+    st.dataframe(df_operacion)
+    total_operacion = df_operacion["Monto"].sum()
+    st.write(f"**Total Actividades en operación:** ${total_operacion:,.2f}")
+    
     
     st.write("**Fuentes de Efectivo**")
     fuentes_data = {
@@ -563,6 +585,7 @@ elif option == "Depreciación de activos":
 mostrar_estado_resultados()
 mostrar_balance_general()
 mostrar_estado_cambios_capital()
+mostrar_estado_flujo_efectivo()
 
 st.subheader("Libro Diario")
 for transaccion in st.session_state.transacciones:
