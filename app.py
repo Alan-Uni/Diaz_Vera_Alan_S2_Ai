@@ -85,9 +85,7 @@ def mostrar_balance_general():
     
     st.write(f"**Total Activo:** ${subtotal_circulante + subtotal_no_circulante:,.2f}")
 
-def mostrar_balance_general():
-    st.subheader("Balance General")
-    
+
 
     st.write("### Pasivo")
     pasivo_df = pd.DataFrame.from_dict(st.session_state.balances["Pasivo"], orient="index", columns=["Monto"])
@@ -199,6 +197,83 @@ def mostrar_estado_cambios_capital():
     estado_cambios_df = pd.DataFrame(estado_cambios)
 
     st.dataframe(estado_cambios_df)
+
+def mostrar_estado_flujo_efectivo():
+    st.subheader("Estado de Flujo de Efectivo")
+    
+    st.write("### Actividades en Operación")
+    
+    utilidad_periodo = st.session_state.balances["Capital"]["Utilidad del Periodo"]
+    isr = utilidad_periodo * 0.30  
+    ptu = utilidad_periodo * 0.10  
+    utilidad_neta = utilidad_periodo - (isr + ptu)
+    
+    st.write("**Fuentes de Efectivo**")
+    fuentes_data = {
+        "Utilidad del ejercicio": utilidad_neta,
+        "Cargos a resultados (no efectivo)": 0,
+        "ISR": isr,
+        "PTU": ptu,
+        "Acreedores": abs(st.session_state.balances["Pasivo"]["Acreedores"]),  
+    }
+    df_fuentes = pd.DataFrame.from_dict(fuentes_data, orient="index", columns=["Monto"])
+    st.dataframe(df_fuentes)
+    total_fuentes = df_fuentes["Monto"].sum()
+    st.write(f"**Total fuentes de efectivo:** ${total_fuentes:,.2f}")
+
+    st.write("**Aplicación de Efectivo**")
+    aplicacion_data = {
+        "Mercancías": abs(st.session_state.balances["Activo"]["Mercancías"]),
+        "Clientes": abs(st.session_state.balances["Activo"]["Clientes"]),
+        "IVA acreditable": abs(st.session_state.balances["Activo"]["IVA pagado"]),
+        "IVA pendiente de acreditar": abs(st.session_state.balances["Activo"]["IVA por acreditar"]),
+        "IVA trasladado": (st.session_state.balances["Pasivo"]["IVA trasladado"]),  
+        "IVA por trasladar": (st.session_state.balances["Pasivo"]["IVA por trasladar"]),  
+        "Proveedores": 0.00,  
+    }
+    df_aplicacion = pd.DataFrame.from_dict(aplicacion_data, orient="index", columns=["Monto"])
+    st.dataframe(df_aplicacion)
+    total_aplicacion = df_aplicacion["Monto"].sum()
+    st.write(f"**Total aplicacion de efectivo:** ${total_aplicacion:,.2f}")
+    flujo_neto_operacion = total_fuentes - total_aplicacion
+    st.write(f"**Disminución neta del efectivo:** ${flujo_neto_operacion:,.2f}")
+    
+    st.write("### Actividades de Inversión")
+    inversion_data = {
+        "Terrenos": st.session_state.balances["Activo"]["Terrenos"],
+        "Edificios": st.session_state.balances["Activo"]["Edificios"],
+        "Equipo de cómputo": st.session_state.balances["Activo"]["Equipo de cómputo"],
+        "Mobiliario y equipo": st.session_state.balances["Activo"]["Mobiliario y equipo"],
+        "Muebles y enseres": st.session_state.balances["Activo"]["Muebles y enseres"],
+        "Equipo de transporte": st.session_state.balances["Activo"]["Equipo de transporte"],
+    }
+    df_inversion = pd.DataFrame.from_dict(inversion_data, orient="index", columns=["Monto"])
+    st.dataframe(df_inversion)
+    total_inversion = df_inversion["Monto"].sum()
+    st.write(f"**Flujos netos de efectivo de inversión:** ${total_inversion:,.2f}")
+    
+    st.write("### Actividades de Financiamiento")
+    financiamiento_data = {
+        "Capital Social": st.session_state.balances["Capital"]["Capital Social"],
+        "Acreedores diversos": st.session_state.balances["Pasivo"]["Acreedores"],  
+    }
+    df_financiamiento = pd.DataFrame.from_dict(financiamiento_data, orient="index", columns=["Monto"])
+    st.dataframe(df_financiamiento)
+    total_financiamiento = df_financiamiento["Monto"].sum()
+    st.write(f"**Flujos netos de efectivo de financiamiento:** ${total_financiamiento:,.2f}")
+    
+    st.write("### Incremento Neto de Efectivo")
+    caja_final = st.session_state.balances["Activo"]["Caja"]
+    bancos_final = st.session_state.balances["Activo"]["Bancos"]
+    caja_inicial = 50_000.00  
+    bancos_inicial = 1_500_000.00  
+    
+    st.write(f"**Efectivo al principio (Caja):** ${caja_inicial:,.2f}")
+    st.write(f"**Efectivo al final (Caja):** ${caja_final:,.2f}")
+    st.write(f"**Efectivo al principio (Bancos):** ${bancos_inicial:,.2f}")
+    st.write(f"**Efectivo al final (Bancos):** ${bancos_final:,.2f}")
+    st.write(f"**Incremento neto de efectivo:** ${(caja_final + bancos_final) - (caja_inicial + bancos_inicial):,.2f}")
+
 
 def actualizar_balances(transaccion):
     for cuenta, monto in transaccion["cargos"].items():
@@ -513,34 +588,34 @@ st.subheader("Balanza de Comprobación")
 
 balanza = {
     "Cuenta": (
-        list(st.session_state.balances["Activo"].keys()) +  # Cuentas de Activo
-        list(st.session_state.balances["Pasivo"].keys()) +  # Cuentas de Pasivo
-        [cuenta for cuenta in st.session_state.balances["Capital"].keys() if cuenta != "Utilidad del Periodo"] +  # Cuentas de Capital, excluyendo "Utilidad del Periodo"
-        list(st.session_state.balances["Extra"].keys())  # Cuentas de Extra
+        list(st.session_state.balances["Activo"].keys()) +  
+        list(st.session_state.balances["Pasivo"].keys()) +  
+        [cuenta for cuenta in st.session_state.balances["Capital"].keys() if cuenta != "Utilidad del Periodo"] +  
+        list(st.session_state.balances["Extra"].keys())  
     ),
     "Movimientos Debe": (
-        [max(0, st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  # Movimientos Debe de Activo
-        [max(0, st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  # Movimientos Debe de Pasivo
-        [max(0, st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  # Movimientos Debe de Capital, excluyendo "Utilidad del Periodo"
-        [max(0, st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  # Movimientos Debe de Extra
+        [max(0, st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  
+        [max(0, st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  
+        [max(0, st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] + 
+        [max(0, st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  
     ),
     "Movimientos Haber": (
-        [max(0, -st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  # Movimientos Haber de Activo
-        [max(0, -st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  # Movimientos Haber de Pasivo
-        [max(0, -st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  # Movimientos Haber de Capital, excluyendo "Utilidad del Periodo"
-        [max(0, -st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  # Movimientos Haber de Extra
+        [max(0, -st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  
+        [max(0, -st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  
+        [max(0, -st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  
+        [max(0, -st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  
     ),
     "Saldos Debe": (
-        [max(0, st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  # Saldos Debe de Activo
-        [max(0, st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  # Saldos Debe de Pasivo
-        [max(0, st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  # Saldos Debe de Capital, excluyendo "Utilidad del Periodo"
-        [max(0, st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  # Saldos Debe de Extra
+        [max(0, st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  
+        [max(0, st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  
+        [max(0, st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  
+        [max(0, st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  
     ),
     "Saldos Haber": (
-        [max(0, -st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  # Saldos Haber de Activo
-        [max(0, -st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  # Saldos Haber de Pasivo
-        [max(0, -st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  # Saldos Haber de Capital, excluyendo "Utilidad del Periodo"
-        [max(0, -st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  # Saldos Haber de Extra
+        [max(0, -st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] +  
+        [max(0, -st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] +  
+        [max(0, -st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"] if cuenta != "Utilidad del Periodo"] +  
+        [max(0, -st.session_state.balances["Extra"].get(cuenta, 0)) for cuenta in st.session_state.balances["Extra"]]  
     )
 }
 
