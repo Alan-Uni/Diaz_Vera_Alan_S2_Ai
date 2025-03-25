@@ -89,14 +89,16 @@ def mostrar_balance_general():
 
     st.write("### Pasivo")
     pasivo_df = pd.DataFrame.from_dict(st.session_state.balances["Pasivo"], orient="index", columns=["Monto"])
+    pasivo_df["Monto"] = pasivo_df["Monto"].abs()
     st.dataframe(pasivo_df)
-    total_pasivo = pasivo_df["Monto"].abs().sum()  # Suma absoluta
+    total_pasivo = pasivo_df["Monto"].sum()  
     st.write(f"**Total Pasivo:** ${total_pasivo:,.2f}")
 
     st.write("### Capital")
     capital_df = pd.DataFrame.from_dict(st.session_state.balances["Capital"], orient="index", columns=["Monto"])
+    capital_df["Monto"] = capital_df["Monto"].abs()
     st.dataframe(capital_df)
-    total_capital = capital_df["Monto"].abs().sum()  # Suma absoluta
+    total_capital = capital_df["Monto"].sum()  
     st.write(f"**Total Capital:** ${total_capital:,.2f}")
 
     st.write(f"**Total Pasivo + Capital:** ${total_pasivo + total_capital:,.2f}")
@@ -338,7 +340,23 @@ def registrar_transaccion(transaccion):
     st.success("Transacción registrada correctamente.")
 
 
-
+def mostrar_firmas():
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        
+        st.markdown("**Propietario**")
+        st.image("./firmas/firma_propietario.png", width=150)  
+        st.markdown("Alan Díaz Vera")
+        st.markdown("""<div style="border-bottom: 2px solid black; width: 80%;"></div>""", 
+                   unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("**Revisó**")
+        st.image("./firmas/firma_revisor.png", width=150)  
+        st.markdown("Nuria González Zúñiga")
+        st.markdown("""<div style="border-bottom: 2px solid black; width: 80%;"></div>""", 
+                   unsafe_allow_html=True)
 
 if option == "Asiento de apertura":
     st.subheader("Asiento de Apertura")
@@ -583,9 +601,13 @@ elif option == "Depreciación de activos":
         registrar_transaccion(transaccion)
 
 mostrar_estado_resultados()
+mostrar_firmas()
 mostrar_balance_general()
+mostrar_firmas()
 mostrar_estado_cambios_capital()
+mostrar_firmas()
 mostrar_estado_flujo_efectivo()
+mostrar_firmas()
 
 st.subheader("Libro Diario")
 for transaccion in st.session_state.transacciones:
