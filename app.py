@@ -114,7 +114,6 @@ def mostrar_estado_resultados():
 
     utilidad_periodo = utilidad_bruta - gastos_generales
 
-   
 
     estado_resultados = {
         "Concepto": ["Ventas", "Costo de lo vendido", "Utilidad Bruta", "Gastos generales", "Utilidad del Periodo"],
@@ -211,6 +210,12 @@ def mostrar_estado_flujo_efectivo():
     isr = utilidad_periodo * 0.30  
     ptu = utilidad_periodo * 0.10  
     utilidad_neta = utilidad_periodo - (isr + ptu)
+    Depre1 = abs(st.session_state.balances["Extra"].get("Depreciación Acumulada Edificios", 0))
+    Depre2 = abs(st.session_state.balances["Extra"].get("Depreciación Acumulada Equipo de cómputo", 0))
+    Depre3 = abs(st.session_state.balances["Extra"].get("Depreciación Acumulada Mobiliario y equipo", 0))
+    Depre4 = abs(st.session_state.balances["Extra"].get("Depreciación Acumulada Muebles y enseres", 0))
+    Depre5 = abs(st.session_state.balances["Extra"].get("Depreciación Acumulada Equipo de transporte", 0))
+    DepreciaTotal = Depre1+Depre2+Depre3+Depre4+Depre5
 
     st.write("### Actividades en Operación")
     operacion_data = {
@@ -224,6 +229,8 @@ def mostrar_estado_flujo_efectivo():
         "Provision de ISR": isr*-1,
         "Provision de PTU": ptu*-1,
         "Utilidad del ejercicio": utilidad_neta*-1,
+        "Papelería":st.session_state.balances["Activo"]["Papelería"],
+        "Rentas pagadas por anticipado":st.session_state.balances["Activo"]["Rentas pagadas por anticipado"],
 
     }
     df_operacion = pd.DataFrame.from_dict(operacion_data, orient="index", columns=["Monto"])
@@ -232,44 +239,15 @@ def mostrar_estado_flujo_efectivo():
     st.write(f"**Total Actividades en operación:** ${total_operacion:,.2f}")
     
     
-    st.write("**Fuentes de Efectivo**")
-    fuentes_data = {
-        "Utilidad del ejercicio": utilidad_neta,
-        "Cargos a resultados (no efectivo)": 0,
-        "ISR": isr,
-        "PTU": ptu,
-        "Acreedores": abs(st.session_state.balances["Pasivo"]["Acreedores"]),  
-    }
-    df_fuentes = pd.DataFrame.from_dict(fuentes_data, orient="index", columns=["Monto"])
-    st.dataframe(df_fuentes)
-    total_fuentes = df_fuentes["Monto"].sum()
-    st.write(f"**Total fuentes de efectivo:** ${total_fuentes:,.2f}")
-
-    st.write("**Aplicación de Efectivo**")
-    aplicacion_data = {
-        "Mercancías": abs(st.session_state.balances["Activo"]["Mercancías"]),
-        "Clientes": abs(st.session_state.balances["Activo"]["Clientes"]),
-        "IVA acreditable": abs(st.session_state.balances["Activo"]["IVA pagado"]),
-        "IVA pendiente de acreditar": abs(st.session_state.balances["Activo"]["IVA por acreditar"]),
-        "IVA trasladado": (st.session_state.balances["Pasivo"]["IVA trasladado"]),  
-        "IVA por trasladar": (st.session_state.balances["Pasivo"]["IVA por trasladar"]),  
-        "Proveedores": 0.00,  
-    }
-    df_aplicacion = pd.DataFrame.from_dict(aplicacion_data, orient="index", columns=["Monto"])
-    st.dataframe(df_aplicacion)
-    total_aplicacion = df_aplicacion["Monto"].sum()
-    st.write(f"**Total aplicacion de efectivo:** ${total_aplicacion:,.2f}")
-    flujo_neto_operacion = total_fuentes - total_aplicacion
-    st.write(f"**Disminución neta del efectivo:** ${flujo_neto_operacion:,.2f}")
     
     st.write("### Actividades de Inversión")
     inversion_data = {
         "Terrenos": st.session_state.balances["Activo"]["Terrenos"],
-        "Edificios": st.session_state.balances["Activo"]["Edificios"],
-        "Equipo de cómputo": st.session_state.balances["Activo"]["Equipo de cómputo"],
-        "Mobiliario y equipo": st.session_state.balances["Activo"]["Mobiliario y equipo"],
-        "Muebles y enseres": st.session_state.balances["Activo"]["Muebles y enseres"],
-        "Equipo de transporte": st.session_state.balances["Activo"]["Equipo de transporte"],
+        "Edificios": st.session_state.balances["Activo"]["Edificios"] + st.session_state.balances["Extra"]["Depreciación Acumulada Edificios"],
+        "Equipo de cómputo": st.session_state.balances["Activo"]["Equipo de cómputo"] + st.session_state.balances["Extra"]["Depreciación Acumulada Equipo de cómputo"],
+        "Mobiliario y equipo": st.session_state.balances["Activo"]["Mobiliario y equipo"] + st.session_state.balances["Extra"]["Depreciación Acumulada Mobiliario y equipo"],
+        "Muebles y enseres": st.session_state.balances["Activo"]["Muebles y enseres"] + st.session_state.balances["Extra"]["Depreciación Acumulada Muebles y enseres"],
+        "Equipo de transporte": st.session_state.balances["Activo"]["Equipo de transporte"] + st.session_state.balances["Extra"]["Depreciación Acumulada Equipo de transporte"],
     }
     df_inversion = pd.DataFrame.from_dict(inversion_data, orient="index", columns=["Monto"])
     st.dataframe(df_inversion)
@@ -280,6 +258,7 @@ def mostrar_estado_flujo_efectivo():
     financiamiento_data = {
         "Capital Social": st.session_state.balances["Capital"]["Capital Social"],
         "Acreedores diversos": st.session_state.balances["Pasivo"]["Acreedores"],  
+        "Financiamiento y otras fuentes":st.session_state.balances["Pasivo"]["Documentos por pagar"],
     }
     df_financiamiento = pd.DataFrame.from_dict(financiamiento_data, orient="index", columns=["Monto"])
     st.dataframe(df_financiamiento)
@@ -291,12 +270,65 @@ def mostrar_estado_flujo_efectivo():
     bancos_final = st.session_state.balances["Activo"]["Bancos"]
     caja_inicial = 50_000.00  
     bancos_inicial = 1_500_000.00  
+    cajaBanco = caja_final+bancos_final
+    
     
     st.write(f"**Efectivo al principio (Caja):** ${caja_inicial:,.2f}")
     st.write(f"**Efectivo al final (Caja):** ${caja_final:,.2f}")
     st.write(f"**Efectivo al principio (Bancos):** ${bancos_inicial:,.2f}")
     st.write(f"**Efectivo al final (Bancos):** ${bancos_final:,.2f}")
-    st.write(f"**Incremento neto de efectivo:** ${(caja_final + bancos_final) - (caja_inicial + bancos_inicial):,.2f}")
+    st.write(f"**Suma de caja y bancos final:** ${cajaBanco:,.2f}")
+    st.write(f"**Efectivo al final del periodo:** ${total_financiamiento + total_inversion + total_operacion :,.2f}")
+
+    st.write("**Fuentes de Efectivo**")
+    fuentes_data = {
+        "Utilidad del ejercicio": utilidad_neta,
+        "Depreciaciones": DepreciaTotal,
+        "Cargos a resultados (no efectivo)": 0,
+        "ISR": isr,
+        "PTU": ptu,
+        "Acreedores": abs(st.session_state.balances["Pasivo"]["Acreedores"]), 
+        "Financiamiento y otras fuentes": abs(st.session_state.balances["Pasivo"]["Documentos por pagar"]),
+        "Proveedores":0,
+        "Capital social":abs(st.session_state.balances["Capital"]["Capital Social"]),
+        
+    }
+    df_fuentes = pd.DataFrame.from_dict(fuentes_data, orient="index", columns=["Monto"])
+    st.dataframe(df_fuentes)
+    total_fuentes = df_fuentes["Monto"].sum()
+    Efectivo_operacion=utilidad_neta+DepreciaTotal+isr+ptu+abs(st.session_state.balances["Pasivo"]["Acreedores"])
+    st.write(f"**Efectivo generado en la operación:** ${Efectivo_operacion:,.2f}")
+    st.write(f"**Suma de las fuentes de efectivo:** ${total_fuentes:,.2f}")
+
+    st.write("**Aplicación de Efectivo**")
+    aplicacion_data = {
+        "Mercancías": abs(st.session_state.balances["Activo"]["Mercancías"]),
+        "Clientes": abs(st.session_state.balances["Activo"]["Clientes"]),
+        "Papelería":st.session_state.balances["Activo"]["Papelería"],
+        "Rentas pagadas por anticipado": abs(st.session_state.balances["Activo"]["Rentas pagadas por anticipado"]),
+        "IVA acreditable": abs(st.session_state.balances["Activo"]["IVA pagado"]),
+        "IVA pendiente de acreditar": abs(st.session_state.balances["Activo"]["IVA por acreditar"]),
+        "IVA trasladado": (st.session_state.balances["Pasivo"]["IVA trasladado"]),  
+        "IVA por trasladar": (st.session_state.balances["Pasivo"]["IVA por trasladar"]),  
+        "Terrenos": st.session_state.balances["Activo"]["Terrenos"],
+        "Edificios": st.session_state.balances["Activo"]["Edificios"] ,
+        "Equipo de cómputo": st.session_state.balances["Activo"]["Equipo de cómputo"] ,
+        "Mobiliario y equipo": st.session_state.balances["Activo"]["Mobiliario y equipo"] ,
+        "Muebles y enseres": st.session_state.balances["Activo"]["Muebles y enseres"] ,
+        "Equipo de transporte": st.session_state.balances["Activo"]["Equipo de transporte"] , 
+    }
+    df_aplicacion = pd.DataFrame.from_dict(aplicacion_data, orient="index", columns=["Monto"])
+    st.dataframe(df_aplicacion)
+    total_aplicacion = df_aplicacion["Monto"].sum()
+    st.write(f"**Total aplicacion de efectivo:** ${total_aplicacion:,.2f}")
+    flujo_neto_operacion = total_fuentes - total_aplicacion
+    st.write(f"**Disminución neta del efectivo:** ${flujo_neto_operacion:,.2f}")
+    st.write(f"**Efectivo al principio (Caja):** ${caja_inicial:,.2f}")
+    st.write(f"**Efectivo al final (Caja):** ${caja_final:,.2f}")
+    st.write(f"**Efectivo al principio (Bancos):** ${bancos_inicial:,.2f}")
+    st.write(f"**Efectivo al final (Bancos):** ${bancos_final:,.2f}")
+    st.write(f"**Suma de caja y bancos final:** ${cajaBanco:,.2f}")
+
 
 
 def actualizar_balances(transaccion):
